@@ -89,6 +89,7 @@ class ChatResponse(BaseModel):
     needsConfirmation: bool
     pendientes: list[dict]
     tokensSesion: int
+    modelo: str
 
 
 def verificar_acceso(x_access_key: str | None = Header(None)) -> None:
@@ -121,7 +122,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     finally:
         lock.release()
     return ChatResponse(reply=r.reply, toolCalls=r.tool_calls, needsConfirmation=r.needs_confirmation,
-                        pendientes=r.pendientes, tokensSesion=r.tokens_sesion)
+                        pendientes=r.pendientes, tokensSesion=r.tokens_sesion, modelo=r.modelo or get_settings().modelo)
 
 
 @app.get("/api/sessions/{session_id}", dependencies=[Depends(verificar_acceso)])

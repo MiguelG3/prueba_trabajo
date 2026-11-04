@@ -9,6 +9,7 @@
 """
 
 import json
+import logging
 import operator
 import threading
 from dataclasses import dataclass, field
@@ -27,6 +28,8 @@ from src.dominio.maestro import agregar_jsonl, ahora_iso
 from src.llm.adapter import HerramientaLLM, LLMAdapter, texto_de
 from src.tools.base import Contexto, Tool
 from src.tools.contratos import HERRAMIENTAS
+
+logger = logging.getLogger("agente")
 
 NOMBRE_REGISTRAR = "contratos_registrar"
 NOMBRE_VALIDAR = "contratos_validar"
@@ -51,6 +54,7 @@ class ResultadoTurno:
     needs_confirmation: bool = False
     pendientes: list[dict] = field(default_factory=list)
     tokens_sesion: int = 0
+    modelo: str | None = None  # el que reporta el proveedor en la respuesta (no el configurado)
 
 
 def cargar_system_prompt(raiz: Path) -> str:
@@ -60,19 +64,34 @@ def cargar_system_prompt(raiz: Path) -> str:
     return f"{prompt}\n\n---\n\n# Conocimiento del proceso\n\n{conocimiento}"
 
 
+def _codigo_http(exc: Exception) -> int | None:
+    for candidato in (getattr(exc, "status_code", None), getattr(exc, "code", None),
+                      getattr(getattr(exc, "response", None), "status_code", None)):
+        if isinstance(candidato, int):
+            return candidato
+    return None
+
+
 def mensaje_error_llm(exc: Exception, timeout_s: float) -> str:
-    nombre = type(exc).__name__
-    if "Timeout" in nombre:
+    """Traduce el error del proveedor a lenguaje claro, con el código HTTP y un resumen del mensaje original."""
+    clases = " ".join(c.__name__ for c in type(exc).__mro__)  # p. ej. GoogleAPIError → ServerError, ModelAPIError
+    codigo = _codigo_http(exc)
+    detalle = " ".join(str(exc).split())[:220]
+    sufijo = f" [{codigo or type(exc).__name__}: {detalle}]" if detalle else f" [{codigo or type(exc).__name__}]"
+    if "Timeout" in clases:
         return f"El modelo no respondió en {timeout_s:.0f} s. Intenta de nuevo en un momento."
-    if "RateLimit" in nombre or "ResourceExhausted" in nombre or "429" in str(exc):
-        return "El proveedor del modelo limitó las solicitudes (cuota del plan gratuito). Espera un minuto e intenta de nuevo."
-    if "Authentication" in nombre or "PermissionDenied" in nombre or "401" in str(exc):
-        return "El proveedor rechazó la llave del modelo (LLM_API_KEY inválida o sin permisos)."
-    if "NotFound" in nombre or "404" in str(exc):
-        return "El modelo configurado (LLM_MODEL) no existe en el proveedor."
-    if "Connection" in nombre:
-        return "No hay conexión con el proveedor del modelo."
-    return f"Error del proveedor del modelo ({nombre}). La sesión sigue activa: intenta de nuevo."
+    if codigo == 429 or "RateLimit" in clases or "ResourceExhausted" in clases:
+        return "El proveedor del modelo limitó las solicitudes (cuota del plan gratuito). Espera un minuto e intenta de nuevo." + sufijo
+    if codigo in (401, 403) or "Authentication" in clases or "PermissionDenied" in clases:
+        return "El proveedor rechazó la llave del modelo (LLM_API_KEY inválida o sin permisos)." + sufijo
+    if codigo == 404 or "NotFound" in clases:
+        return "El modelo configurado (LLM_MODEL) no existe en el proveedor." + sufijo
+    if (codigo and codigo >= 500) or "ServerError" in clases or "InternalServer" in clases:
+        return ("El proveedor del modelo tiene una falla temporal o está saturado (no es un error de la solicitud). "
+                "Intenta de nuevo en unos segundos; si persiste, cambia LLM_MODEL a otro modelo." + sufijo)
+    if "Connection" in clases:
+        return "No hay conexión con el proveedor del modelo." + sufijo
+    return "Error del proveedor del modelo. La sesión sigue activa: intenta de nuevo." + sufijo
 
 
 class Agente:
@@ -118,6 +137,7 @@ class Agente:
         try:
             respuesta = self.adapter.enviar([SystemMessage(self.system_prompt), *estado["messages"], *nuevos], herramientas)
         except Exception as exc:  # noqa: BLE001 — CA5: el error del proveedor no tumba la sesión
+            logger.warning("Error del proveedor LLM (%s %s): %s", self.adapter.proveedor, self.adapter.modelo, " ".join(str(exc).split())[:1000])
             return {"messages": [*nuevos, AIMessage(f"⚠️ {mensaje_error_llm(exc, self.settings.llm_timeout_s)}")]}
         with self._lock_tokens:
             self._tokens_globales += respuesta.tokens
@@ -208,7 +228,15 @@ class Agente:
             needs_confirmation=bool(pendientes),
             pendientes=[{"mensaje_id": k, "campos": v["campos"], "detalle": v["detalle"]} for k, v in pendientes.items()],
             tokens_sesion=estado.get("tokens_sesion", 0),
+            modelo=self._modelo_que_respondio(nuevos),
         )
+
+    def _modelo_que_respondio(self, mensajes: list[BaseMessage]) -> str:
+        for m in reversed(mensajes):
+            nombre = isinstance(m, AIMessage) and (m.response_metadata or {}).get("model_name")
+            if nombre:
+                return str(nombre).removeprefix("models/")
+        return self.adapter.modelo
 
     def _resumir_llamadas(self, mensajes: list[BaseMessage]) -> list[dict]:
         resultados = {m.tool_call_id: m for m in mensajes if isinstance(m, ToolMessage)}

@@ -133,3 +133,22 @@ def test_tool_calls_al_llegar_al_tope_se_descartan(proyecto):
     agente, _ = _agente(proyecto, [tool_call("contratos_leer_buzon", {}, f"c{i}") for i in range(5)], max_iteraciones=2)
     turno = agente.conversar("s1", "x")
     assert len(turno.tool_calls) == 2 and "tope de iteraciones" in turno.reply
+
+
+def test_error_5xx_se_explica_con_codigo_y_detalle(proyecto):
+    class ServerError(Exception):
+        code = 503
+
+    class GoogleAPIError(ServerError):
+        pass
+
+    agente, _ = _agente(proyecto, [GoogleAPIError("503 UNAVAILABLE. The model is overloaded. Please try again later.")])
+    respuesta = agente.conversar("s1", "hola").reply
+    assert "falla temporal o está saturado" in respuesta and "[503: 503 UNAVAILABLE. The model is overloaded" in respuesta
+
+
+def test_reporta_el_modelo_que_respondio_no_el_configurado(proyecto):
+    servido = AIMessage("hola", response_metadata={"model_name": "models/gemini-3.5-flash-lite-001"})
+    agente, _ = _agente(proyecto, [servido, AIMessage("sin metadatos")])
+    assert agente.conversar("s1", "hola").modelo == "gemini-3.5-flash-lite-001"
+    assert agente.conversar("s1", "otra").modelo == "guion"  # sin metadatos: el configurado en el adaptador

@@ -12,15 +12,17 @@ h1 { font-size: 1.15rem; margin: 0; color: var(--primario); }
 .badge { font-size: .8rem; padding: .25rem .6rem; border-radius: 999px; background: #eceff1; }
 .badge.ok { background: #e8f5e9; color: var(--ok); }
 .badge.error { background: #ffebee; color: var(--error); }
-main { display: grid; grid-template-columns: 1fr 280px; gap: 1rem; padding: 1rem 1.25rem; overflow: hidden; }
-#chat { overflow-y: auto; display: flex; flex-direction: column; gap: .6rem; padding-right: .5rem; }
+main { display: grid; grid-template-columns: 1fr 280px; gap: 1rem; padding: 1rem 1.25rem; overflow: hidden; min-height: 0; }
+#chat { overflow-y: auto; display: flex; flex-direction: column; gap: .6rem; padding-right: .5rem; min-height: 0; }
+/* Sin esto cada mensaje se encoge para caber en el alto del chat y, por su overflow-x, se vuelve su propia caja con scroll. */
+#chat > * { flex-shrink: 0; }
 aside { background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; padding: .75rem; overflow-y: auto; }
 aside h2 { font-size: .85rem; text-transform: uppercase; color: var(--suave); margin: .5rem 0; }
 aside .ejemplo { display: block; width: 100%; margin-bottom: .4rem; text-align: left; }
 .archivos { padding-left: 1rem; font-size: .9rem; }
 .clave { display: block; font-size: .8rem; color: var(--suave); margin-top: 1rem; }
 .clave input { width: 100%; margin-top: .25rem; padding: .35rem; }
-.msg { max-width: 85%; padding: .6rem .8rem; border-radius: 10px; line-height: 1.45; overflow-x: auto; }
+.msg { max-width: 85%; padding: .6rem .8rem; border-radius: 10px; line-height: 1.45; overflow-x: auto; overflow-y: hidden; }
 .msg.usuario { align-self: flex-end; background: var(--primario); color: #fff; }
 .msg.agente { align-self: flex-start; background: var(--panel); border: 1px solid var(--borde); }
 .msg.agente.confirmacion { border: 2px solid var(--alerta); background: var(--alerta-fondo); }

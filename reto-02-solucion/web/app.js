@@ -3,6 +3,7 @@ const chat = $("#chat");
 const entrada = $("#entrada");
 const banner = $("#banner");
 let sessionId = localStorage.getItem("sessionId") || nuevaSesionId();
+let salud = {};
 $("#clave").value = localStorage.getItem("clave") || "";
 
 function nuevaSesionId() {
@@ -91,6 +92,7 @@ async function enviar(texto) {
     }
     if (data.toolCalls.length) agregar("herramientas", data.toolCalls.map(tarjetaHerramienta).join(""));
     agregar("agente", markdown(data.reply || "_(sin respuesta)_"), data.needsConfirmation ? "confirmacion" : "");
+    pintarModelo(data.modelo);
     mostrarBanner(data.pendientes);
   } catch (e) {
     pensando.remove();
@@ -137,8 +139,17 @@ $("#btn-reset").addEventListener("click", async () => {
   agregar("agente", "Demo reiniciada: el buzón vuelve a tener los 6 mensajes pendientes.");
 });
 
+function pintarModelo(modeloQueRespondio) {
+  const modelo = modeloQueRespondio || salud.model;
+  $("#modelo").textContent = `${salud.provider} · ${modelo} · ${salud.tier}`;
+  $("#modelo").title = modeloQueRespondio
+    ? `Modelo que respondió el último mensaje (configurado: ${salud.model})`
+    : "Modelo configurado en el servidor (LLM_MODEL)";
+}
+
 fetch("/api/health").then((r) => r.json()).then((h) => {
-  $("#modelo").textContent = `${h.provider} · ${h.model} · ${h.tier}`;
+  salud = h;
+  pintarModelo();
   $("#modelo").classList.add(h.ok ? "ok" : "error");
   if (!h.ok) agregar("agente", `⚠️ Modelo no configurado: ${escapar(h.error || "")}`, "error");
 });

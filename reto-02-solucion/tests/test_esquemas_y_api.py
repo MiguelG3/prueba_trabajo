@@ -79,6 +79,7 @@ def test_api_chat_health_y_sesion(cliente):
     assert r["reply"] == "Hay 6 mensajes pendientes."
     assert r["toolCalls"][0]["nombre"] == "contratos_leer_buzon" and r["toolCalls"][0]["ok"]
     assert r["needsConfirmation"] is False
+    assert r["modelo"] == "guion"
     assert [m["rol"] for m in cliente.get("/api/sessions/abc").json()["mensajes"]] == ["usuario", "agente", "herramienta", "agente"]
 
 
