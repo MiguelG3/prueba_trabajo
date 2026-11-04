@@ -64,8 +64,11 @@ resumen de alertas.
 
 ## Link de prueba
 
-- URL: `https://<tu-servicio>.onrender.com` _(completar tras el despliegue)_
-- Clave de acceso: _(la de `APP_ACCESS_KEY`, si se definió)_
+- **URL:** https://agente-contratos-periferia.onrender.com
+- **Clave de acceso:** `<APP_ACCESS_KEY>`, que se entrega por separado al equipo evaluador. Se ingresa en el campo
+  "Clave de acceso" del panel derecho y también vale para `/mcp`.
+- **Servidor MCP:** `https://agente-contratos-periferia.onrender.com/mcp`
+- El plan gratuito se duerme tras 15 min sin tráfico: el primer acceso puede tardar ~1 minuto.
 
 ### Despliegue en Render
 
@@ -76,7 +79,7 @@ aquí (`rootDir`, `dockerfilePath`, `dockerContext`).
 2. Ingresa los secrets `LLM_API_KEY` y `APP_ACCESS_KEY` cuando los pida.
 3. El plan gratis se duerme tras 15 min sin tráfico: abre el link ~1 min antes de la defensa.
 
-El mismo servicio expone el servidor MCP en `https://<tu-servicio>.onrender.com/mcp` (con la misma
+El mismo servicio expone el servidor MCP en `https://agente-contratos-periferia.onrender.com/mcp` (con la misma
 `APP_ACCESS_KEY` en `Authorization: Bearer …`). Configuración de clientes en [modulo/README.md](modulo/README.md).
 
 > `out/` vive en el disco efímero del contenedor: se reinicia con cada despliegue (suficiente para la demo;

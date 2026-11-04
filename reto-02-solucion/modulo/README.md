@@ -49,7 +49,8 @@ claude mcp add contratos -- uv run --directory /ruta/a/reto-02-solucion python -
 
 ### Opción B — Remoto (HTTP): el servidor desplegado en Render
 
-La misma app web expone el endpoint MCP en `/mcp`, protegido con la `APP_ACCESS_KEY`. No hay que clonar nada:
+La misma app web expone el endpoint MCP en `/mcp`, protegido con la `APP_ACCESS_KEY` (se entrega por separado).
+No hay que clonar nada; reemplaza `<APP_ACCESS_KEY>` por la clave recibida:
 
 **OpenCode**:
 ```json
@@ -57,7 +58,7 @@ La misma app web expone el endpoint MCP en `/mcp`, protegido con la `APP_ACCESS_
   "mcp": {
     "contratos": {
       "type": "remote",
-      "url": "https://<servicio>.onrender.com/mcp",
+      "url": "https://agente-contratos-periferia.onrender.com/mcp",
       "headers": { "Authorization": "Bearer <APP_ACCESS_KEY>" }
     }
   }
@@ -66,7 +67,7 @@ La misma app web expone el endpoint MCP en `/mcp`, protegido con la `APP_ACCESS_
 
 **Claude Code**:
 ```bash
-claude mcp add --transport http contratos https://<servicio>.onrender.com/mcp --header "Authorization: Bearer <APP_ACCESS_KEY>"
+claude mcp add --transport http contratos https://agente-contratos-periferia.onrender.com/mcp --header "Authorization: Bearer <APP_ACCESS_KEY>"
 ```
 
 ### Agente y skill en la plataforma

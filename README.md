@@ -9,4 +9,4 @@ Solución del **Reto 02 — Agente conversacional "Registro de Contratos Vigente
 | `detalle-instrucciones-reto-2.pdf` | Instructivo del reto |
 | `render.yaml` | Despliegue en Render (apunta a `reto-02-solucion/`) |
 
-Demo en vivo: `https://<servicio>.onrender.com` · Servidor MCP: `https://<servicio>.onrender.com/mcp`
+**Demo en vivo:** https://agente-contratos-periferia.onrender.com · **Servidor MCP:** `https://agente-contratos-periferia.onrender.com/mcp` · **Clave de acceso:** se entrega por separado al equipo evaluador

@@ -251,7 +251,7 @@ administrativa y la revisión jurídica, cuando se necesite, se contrata por cas
 | Topes de iteraciones y tokens | Hecho | Producción: rate limit por IP / autenticación SSO |
 | `demo.py` sin modelo | Hecho | Determinista salvo timestamps |
 | Bonus `modulo/` | Hecho | `agent.md` y `SKILL.md` generados desde las mismas fuentes (un test falla si divergen); herramientas vía **servidor MCP** (stdio local y HTTP en `/mcp`, desplegado con la app) |
-| Link público | Preparado | `Dockerfile` + `render.yaml`; el despliegue se hace con la cuenta del candidato |
+| Link público | Hecho | https://agente-contratos-periferia.onrender.com (Render, Docker; `render.yaml` en la raíz del repo). Producción: plan pago sin suspensión e instancia con disco persistente |
 | Acuse automático (gobierno) | Diseñado | No implementado (requiere envío de correo real) |
 
 Pruebas: `uv run pytest` ejecuta 72 casos: golden tests de extracción por mensaje, números en letras, fechas,
@@ -260,22 +260,41 @@ proveedor, esquemas aceptados por cada proveedor (sin red), API, sincronía del 
 
 ## 10. Uso de IA
 
-- **Claude Code (Claude Opus 5.5)** se usó como asistente de ingeniería. Leyó los PDF y el PRD, comparó los 3
-  retos (se eligió el 2 por ser el que más exige criterio de AI engineering) y propuso un plan que revisé y
-  ajusté: modelo configurable gratis o de pago; `Literal` y `Field(description)` como prompt de las
-  herramientas. Después implementó el código y las pruebas, y validó los esquemas contra cada proveedor.
-- **Lo que se descartó o corrigió en el camino:**
-  - Gemini por la capa OpenAI-compatible → se cambió a la integración nativa por las *thought signatures*.
-  - El simplificador de esquemas quitaba `default`, y eso volvía obligatorios todos los campos opcionales en
-    Gemini → se detectó con una prueba y se corrigió.
-  - Se descartaron `interrupt()` y `create_react_agent` (ver §7).
-  - Se descartó enviar `temperature` a Claude, porque los modelos actuales la rechazan.
-  - En la primera prueba con Gemini real, el error llegaba como un genérico `GoogleAPIError`. Se agregó el
-    código HTTP y el mensaje del proveedor al chat y al log del servidor; así se vio que era un `503` por
-    saturación del alias `-latest`, y se fijó una versión concreta del modelo.
-  - El badge del front mostraba el modelo configurado; ahora muestra el que reporta el proveedor en cada
-    respuesta, porque la configuración solo se lee al arrancar.
-- _(Completa esta sección con tu propio uso y criterio antes de entregar: el PRD exige poder explicar cada línea.)_
+**Herramienta:** Claude Code (Claude Opus 5.5) como asistente de ingeniería.
+
+**Cómo se usó.** Leyó los PDF y el PRD y propuso un plan que revisé y ajusté antes de implementar:
+- el modelo debía ser configurable, gratis o de pago;
+- los esquemas de las herramientas debían usar `Literal` para las opciones fijas y `Field(description=…)` como
+  prompt.
+
+Luego implementó el código y las pruebas, y validó los esquemas contra cada proveedor. Probé la aplicación con
+Gemini real, revisé los archivos generados en `out/` y pedí los ajustes descritos abajo.
+
+**Lo que se descartó o corrigió en el camino:**
+- **Gemini por la capa OpenAI-compatible** → se cambió a la integración nativa, que maneja las *thought
+  signatures* del tool calling multi-turno.
+- **El simplificador de esquemas quitaba `default`**, y eso volvía obligatorios todos los campos opcionales en
+  Gemini → se detectó con una prueba y se corrigió.
+- **`interrupt()` y `create_react_agent`** → descartados (ver §7).
+- **`temperature` en Claude** → no se envía, porque los modelos actuales la rechazan.
+- **Errores opacos del proveedor:** en la primera prueba real el error llegaba como un genérico
+  `GoogleAPIError`. Se agregó el código HTTP y el mensaje del proveedor al chat y al log del servidor. Así se
+  vio que era un `503` por saturación del alias `-latest`, y se fijó una versión concreta del modelo.
+- **El badge del front** mostraba el modelo configurado; ahora muestra el que reporta el proveedor en cada
+  respuesta, porque la configuración solo se lee al arrancar el servidor.
+- **El chat encogía cada mensaje nuevo** hasta volverlo una caja con su propio scroll → se corrigió en el CSS
+  para que solo se desplace la conversación completa.
+
+**Aprendizajes y decisiones propias:**
+- **El prompt no vive solo en `agent/prompt.md`.** Las descripciones de los campos de los modelos pydantic y
+  los `Literal` también son prompt: el modelo los lee en el JSON schema de cada herramienta, y de ellos
+  depende que la llame bien.
+- **Herramientas reutilizables sin reescribirlas.** El PRD pide el módulo con las herramientas en TypeScript
+  (`tools/contratos.ts`). En lugar de duplicarlas, se expusieron con un **servidor MCP**, que plataformas como
+  OpenCode, Claude Code o Cursor cargan sin importar el lenguaje en que están escritas. Así se compensa haber
+  desarrollado en Python.
+- **Despliegue en Render**, para que la demo no dependa de una máquina local (el PRD penaliza con −10 correrla
+  en local).
 
 ## 11. Riesgos de producción y mitigación
 
