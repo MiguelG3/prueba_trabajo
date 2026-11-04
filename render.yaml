@@ -1,13 +1,13 @@
 # Blueprint de Render. El repo es la raíz; la aplicación vive en reto-02-solucion/.
-# Rutas de Docker relativas a la raíz del repo (docs: render.com/docs/blueprint-spec).
+# Con rootDir definido, Render resuelve dockerfilePath y dockerContext RELATIVOS a rootDir.
 services:
   - type: web
     name: agente-contratos-periferia
     runtime: docker
     plan: free
     rootDir: reto-02-solucion                       # solo cambios en esta carpeta disparan deploy
-    dockerfilePath: ./reto-02-solucion/Dockerfile
-    dockerContext: ./reto-02-solucion
+    dockerfilePath: ./Dockerfile                    # = reto-02-solucion/Dockerfile
+    dockerContext: .                                # = reto-02-solucion/
     healthCheckPath: /api/health
     envVars:
       - key: LLM_PROVIDER
