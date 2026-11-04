@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agente de contratos · Periferia IT</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Registro de contratos vigentes</h1>
+      <p class="sub">Punto único de recepción · Periferia IT Group</p>
+    </div>
+    <div class="estado">
+      <span id="modelo" class="badge">conectando…</span>
+      <button id="btn-nueva" class="sec" title="Nueva sesión de chat">Nueva sesión</button>
+      <button id="btn-reset" class="sec" title="Borra out/ y las sesiones">Reiniciar demo</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="chat" aria-live="polite"></section>
+
+    <aside>
+      <h2>Prompts de ejemplo</h2>
+      <button class="ejemplo" data-texto="Procesa el buzón de contratos con fecha de hoy 2026-09-03. Registra lo que esté limpio, muéstrame lo que requiere revisión campo por campo y termina con el reporte de alertas. No registres nada dudoso sin preguntarme.">Procesar buzón (PRD §11)</button>
+      <button class="ejemplo" data-texto="Confirmo el valor 0 y la fecha fin 2027-08-31 para msg-006.">Confirmar msg-006</button>
+      <button class="ejemplo" data-texto="¿Qué contratos vencen en los próximos 60 días con fecha de hoy 2026-09-03?">Vencimientos</button>
+      <h2>Archivos generados</h2>
+      <ul class="archivos">
+        <li><a href="#" data-ruta="alertas.md">out/alertas.md</a></li>
+        <li><a href="#" data-ruta="sharepoint/maestro-contratos.csv">maestro-contratos.csv</a></li>
+        <li><a href="#" data-ruta="sharepoint/historial.jsonl">historial.jsonl</a></li>
+        <li><a href="#" data-ruta="procesados.json">procesados.json</a></li>
+        <li><a href="#" data-ruta="log.jsonl">log.jsonl</a></li>
+      </ul>
+      <label class="clave">Clave de acceso (si aplica)
+        <input id="clave" type="password" autocomplete="off" />
+      </label>
+    </aside>
+  </main>
+
+  <div id="banner" class="banner oculto" role="alert"></div>
+
+  <form id="form">
+    <textarea id="entrada" rows="2" placeholder="Escribe un mensaje… (Enter para enviar, Shift+Enter nueva línea)" required></textarea>
+    <button id="enviar" type="submit">Enviar</button>
+  </form>
+
+  <dialog id="visor">
+    <header><strong id="visor-titulo"></strong><button id="visor-cerrar" class="sec">Cerrar</button></header>
+    <pre id="visor-contenido"></pre>
+  </dialog>
+</body>
+</html>

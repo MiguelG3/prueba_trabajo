@@ -1,0 +1,34 @@
+# --- Exigidos por el PRD (§9.5): sin node_modules/, sin out/, sin .env ---
+node_modules/
+out/
+.env
+.env.*
+!.env.example
+
+# --- Python / uv ---
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# --- Pruebas y herramientas ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# --- Sistema operativo y editores ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# --- Logs y volcados de memoria ---
+*.log
+/core
+core.[0-9]*
