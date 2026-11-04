@@ -86,7 +86,9 @@ START → agente ──(tool_calls)──▶ herramientas ──▶ agente … �
 herramientas)`) tiene tres implementaciones sobre LangChain: OpenAI-compatible, Gemini nativo y Claude nativo.
 Cambiar de proveedor es cambiar `LLM_PROVIDER` / `LLM_MODEL`.
 
-- **Default: Gemini (`gemini-flash-latest`) en el free tier de AI Studio.** Llave gratis y sin tarjeta, buen
+- **Default: Gemini (`gemini-3.5-flash-lite`) en el free tier de AI Studio.** Se fija una versión concreta y no el
+  alias `gemini-flash-latest`: en las pruebas reales el alias devolvió `503 UNAVAILABLE` (alta demanda) y además
+  cambia de modelo sin aviso. Llave gratis y sin tarjeta, buen
   tool calling y buen español. Uso la integración **nativa** (`langchain-google-genai`) y no la capa
   OpenAI-compatible, porque los Gemini recientes exigen devolver *thought signatures* en el tool calling
   multi-turno.
@@ -252,7 +254,7 @@ administrativa y la revisión jurídica, cuando se necesite, se contrata por cas
 | Link público | Preparado | `Dockerfile` + `render.yaml`; el despliegue se hace con la cuenta del candidato |
 | Acuse automático (gobierno) | Diseñado | No implementado (requiere envío de correo real) |
 
-Pruebas: `uv run pytest` ejecuta 70 casos: golden tests de extracción por mensaje, números en letras, fechas,
+Pruebas: `uv run pytest` ejecuta 72 casos: golden tests de extracción por mensaje, números en letras, fechas,
 flujo completo, idempotencia, fixture intacto, errores, guard de confirmación, tope de iteraciones, errores del
 proveedor, esquemas aceptados por cada proveedor (sin red), API, sincronía del módulo y el servidor MCP por stdio y HTTP (con y sin clave).
 
@@ -268,6 +270,11 @@ proveedor, esquemas aceptados por cada proveedor (sin red), API, sincronía del 
     Gemini → se detectó con una prueba y se corrigió.
   - Se descartaron `interrupt()` y `create_react_agent` (ver §7).
   - Se descartó enviar `temperature` a Claude, porque los modelos actuales la rechazan.
+  - En la primera prueba con Gemini real, el error llegaba como un genérico `GoogleAPIError`. Se agregó el
+    código HTTP y el mensaje del proveedor al chat y al log del servidor; así se vio que era un `503` por
+    saturación del alias `-latest`, y se fijó una versión concreta del modelo.
+  - El badge del front mostraba el modelo configurado; ahora muestra el que reporta el proveedor en cada
+    respuesta, porque la configuración solo se lee al arrancar.
 - _(Completa esta sección con tu propio uso y criterio antes de entregar: el PRD exige poder explicar cada línea.)_
 
 ## 11. Riesgos de producción y mitigación
@@ -282,3 +289,23 @@ proveedor, esquemas aceptados por cada proveedor (sin red), API, sincronía del 
 | Gasto descontrolado de la llave en un link público | Topes de iteraciones, de tokens por sesión y globales; `APP_ACCESS_KEY` opcional |
 | Concurrencia sobre el maestro | Lock + escritura atómica; en producción, SharePoint con control de versiones (ETag) |
 | Pérdida de `out/` en Render (disco efímero) | Aceptable para la demo; en producción el maestro vive en SharePoint |
+
+## Anexo · Dependencias y por qué
+
+| Dependencia | Para qué | Por qué esta y no otra |
+|---|---|---|
+| `langgraph` | Ciclo del agente: grafo agente ⇄ herramientas, estado por sesión (checkpointer) | Control explícito del tope de iteraciones, del guard de confirmación y del estado `pendientes` |
+| `langchain-core` | Tipos de mensajes y `bind_tools` comunes a todos los proveedores | Es la interfaz neutral sobre la que se implementa el adaptador propio |
+| `langchain-google-genai` | Gemini nativo (proveedor gratis por defecto) | Maneja las *thought signatures* del tool calling multi-turno; la capa OpenAI-compatible puede perderlas |
+| `langchain-openai` | Groq, OpenRouter, Ollama, OpenAI y cualquier endpoint OpenAI-compatible | Una sola implementación cubre 5 proveedores vía `base_url` |
+| `langchain-anthropic` | Claude nativo | Soporte de `output_config.effort` y del fallback server-side |
+| `pydantic` | Esquemas de herramientas y validación (equivalente a `zod`) | `Literal` → `enum` y `Field(description)` → prompt en el JSON schema; valida antes de ejecutar |
+| `pydantic-settings` | Configuración tipada desde `.env` | Falla al arrancar con un mensaje claro si la configuración es inválida; la llave queda como `SecretStr` |
+| `fastapi` + `uvicorn` | API HTTP, front estático y montaje del endpoint MCP | Validación de entrada con los mismos modelos pydantic; un solo proceso sirve todo |
+| `mcp` | Servidor MCP del módulo (bonus): stdio y Streamable HTTP | SDK oficial del protocolo; reutiliza las mismas herramientas sin reescribirlas |
+| `pypdf` | `contratos_leer_pdf` (P1): texto de PDF nativos | Pura Python, sin binarios del sistema; se importa solo si se necesita |
+| `pytest`, `httpx` (dev) | Pruebas y cliente HTTP de prueba | Estándar; no van en la imagen de producción (`--no-dev`) |
+
+No se usan base de datos, colas ni frameworks de front: el PRD los deja fuera de alcance y agregarlos solo
+sumaría superficie de fallo.
+

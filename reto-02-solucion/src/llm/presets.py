@@ -20,7 +20,7 @@ class Preset:
 
 PRESETS: dict[str, Preset] = {
     "gemini": Preset(
-        "gratis", "google", "gemini-flash-latest", None, True, True,
+        "gratis", "google", "gemini-3.5-flash-lite", None, True, True,
         "Gratis y sin tarjeta en https://aistudio.google.com/apikey",
     ),
     "groq": Preset(

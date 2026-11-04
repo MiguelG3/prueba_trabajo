@@ -27,7 +27,7 @@ igual: `/api/health` y el chat explican qué falta. Para correr **sin llave**, u
 
 ```bash
 uv run demo.py              # procesa los 6 mensajes llamando directamente a las herramientas
-uv run pytest               # 70 pruebas: golden por mensaje, errores, idempotencia, guard de confirmación, API, MCP
+uv run pytest               # 72 pruebas: golden por mensaje, errores, idempotencia, guard de confirmación, API, MCP
 ```
 
 `demo.py` limpia `out/`, fija `hoy = 2026-09-03` y muestra: clasificación y acción por mensaje, msg-006 **sin
@@ -55,7 +55,7 @@ resumen de alertas.
 
 | Método | Ruta | Cuerpo / respuesta |
 |---|---|---|
-| `POST` | `/api/chat` | `{ sessionId, message }` → `{ reply, toolCalls[{nombre, args, ok, resumen, resultado}], needsConfirmation, pendientes[], tokensSesion }` |
+| `POST` | `/api/chat` | `{ sessionId, message }` → `{ reply, toolCalls[{nombre, args, ok, resumen, resultado}], needsConfirmation, pendientes[], tokensSesion, modelo }` (`modelo` = el que respondió, según el proveedor) |
 | `GET` | `/api/sessions/:id` | Historial completo de la sesión (usuario, agente, herramientas) |
 | `GET` | `/api/health` | `{ ok, provider, model, tier }` — nunca expone la llave |
 | `POST` | `/api/reset` | Limpia `out/` y las sesiones (para repetir la demo) |
